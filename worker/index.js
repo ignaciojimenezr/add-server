@@ -23538,7 +23538,7 @@ function getOAuthMetadata(request) {
     response_types_supported: ["code"],
     code_challenge_methods_supported: ["S256"],
     grant_types_supported: ["authorization_code", "refresh_token"],
-    token_endpoint_auth_methods_supported: ["none"]
+    token_endpoint_auth_methods_supported: ["client_secret_basic", "client_secret_post"]
   };
 }
 __name(getOAuthMetadata, "getOAuthMetadata");
@@ -24200,6 +24200,7 @@ async function handleOAuthToken(request, env2) {
           code: params.get("code") || void 0,
           redirect_uri: params.get("redirect_uri") || void 0,
           client_id: params.get("client_id") || void 0,
+          client_secret: params.get("client_secret") || void 0,
           code_verifier: params.get("code_verifier") || void 0,
           refresh_token: params.get("refresh_token") || void 0
         };
@@ -24231,6 +24232,30 @@ async function handleOAuthToken(request, env2) {
       }), {
         status: 400,
         headers: { "Content-Type": "application/json" }
+      });
+    }
+    const basicAuth = request.headers.get("authorization") || "";
+    if (basicAuth.toLowerCase().startsWith("basic ")) {
+      try {
+        const decoded = atob(basicAuth.slice(6).trim());
+        const sep = decoded.indexOf(":");
+        const formDecode = (v) => decodeURIComponent(v.replace(/\+/g, " "));
+        body.client_id = formDecode(decoded.slice(0, sep));
+        body.client_secret = formDecode(decoded.slice(sep + 1));
+      } catch {
+      }
+    }
+    const authClientId = body.client_id;
+    const authClientSecret = body.client_secret;
+    const authClientStr = authClientId ? await env2.OAUTH_STORAGE.get(`client:${authClientId}`) : null;
+    const authClient = authClientStr ? JSON.parse(authClientStr) : null;
+    if (!authClient || !authClient.client_secret || authClientSecret !== authClient.client_secret) {
+      return new Response(JSON.stringify({
+        error: "invalid_client",
+        error_description: "Client authentication failed"
+      }), {
+        status: 401,
+        headers: { "Content-Type": "application/json", "WWW-Authenticate": 'Basic realm="oauth"' }
       });
     }
     const grantType = body.grant_type;
