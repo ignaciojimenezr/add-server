@@ -1,0 +1,17 @@
+{
+  "name": "mcp-add-server",
+  "main": "index.js",
+  "account_id": "ff3c973314cbb3f010e575a366cfa132",
+  "compatibility_date": "2024-11-06",
+  "compatibility_flags": ["nodejs_compat"],
+  "no_bundle": true,
+  "workers_dev": true,
+  "kv_namespaces": [
+    { "binding": "OAUTH_STORAGE", "id": "b43a441f5fad46b88b23a3309bf0a647" }
+  ],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+    "logs": { "enabled": true, "head_sampling_rate": 1, "persist": true, "invocation_logs": true }
+  }
+}
